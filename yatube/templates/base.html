@@ -4,6 +4,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="icon" href="{% static 'img/logo.png' %}" type="image">
     <link rel="icon" href="{% static 'img/fav/favicon.ico' %}" type="image">
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/fav/apple-touch-icon.png' %}">
     <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/fav/favicon-32x32.png' %}">
@@ -18,12 +20,22 @@
     </title>
   </head>
   <body>
-    {% include 'includes/header.html' %}
+    <header>
+      {% include 'includes/header.html' %}
+    </header>
     <main>
-      {% block content %}
-      {% endblock %}
+      <div class="container">
+        <h1>
+          {% block header %}
+          {% endblock %}
+        </h1>
+        {% block content %}
+        {% endblock %}
+      </div>
     </main>
-    {% include 'includes/footer.html' %}
+    <footer class="border-top text-center py-3">
+      {% include 'includes/footer.html' %}
+    </footer>
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
   </body>
 </html>
