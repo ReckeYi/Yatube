@@ -33,4 +33,6 @@ class Post(models.Model):
         help_text="Выберите группу, к которой будет относиться пост",
     )
 
+    def __str__(self):
+        return self.text
 
