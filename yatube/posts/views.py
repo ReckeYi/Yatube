@@ -74,7 +74,10 @@ def profile(request, username):
 
 
 def post_detail(request, post_id):
-    # Здесь код запроса к модели и создание словаря контекста
+    post = get_object_or_404(Post, id=post_id)
+    amount_posts = Post.objects.filter(author=post.author).count()
     context = {
+        "post": post,
+        "amount_posts": amount_posts,
     }
     return render(request, 'posts/post_detail.html', context)
