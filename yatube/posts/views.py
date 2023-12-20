@@ -1,6 +1,9 @@
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
+
+from .forms import PostForm
 from .models import Post, Group, User
 
 
@@ -64,7 +67,6 @@ def profile(request, username):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-
     context = {
         "user_obj": user_obj,
         "user_post_list": user_post_list,
@@ -81,3 +83,23 @@ def post_detail(request, post_id):
         "amount_posts": amount_posts,
     }
     return render(request, 'posts/post_detail.html', context)
+
+
+@login_required
+def post_create(request):
+    form = PostForm(request.POST or None, files=request.FILES or None)
+
+    if request.method == "POST" and form.is_valid():
+        temp_form = form.save(commit=False)
+        temp_form.author = request.user
+        temp_form.save()
+        return redirect("posts:profile", temp_form.author)
+
+    context = {
+        "form": form,
+    }
+    return render(request, 'posts/create_post.html', context)
+
+
+
+
