@@ -7,7 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from ..models import Post, Group
+from ..models import Post, Group, Comment
 
 User = get_user_model()
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
@@ -119,4 +119,28 @@ class CommentCreateFormTests(TestCase):
         cls.post = Post.objects.create(
             text="Первый тестовый текст",
             author=cls.user,
+        )
+
+    def test_comment_create(self):
+        form_data = {"text": "Тестовый комментарий"}
+        CommentCreateFormTests.authorized_client.post(
+            reverse(
+                "posts:add_comment",
+                args=[CommentCreateFormTests.post.id],
+            ),
+            data=form_data,
+            follow=True,
+        )
+        response = self.client.get(
+            reverse(
+                "posts:post_detail",
+                args=[CommentCreateFormTests.post.id],
+            )
+        )
+        self.assertIn(
+            Comment.objects.get(
+                text=form_data["text"],
+                post=CommentCreateFormTests.post.id,
+            ),
+            response.context["comments"],
         )
