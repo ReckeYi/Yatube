@@ -5,10 +5,11 @@ from django import forms
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from ..models import Group, Post
+from ..models import Group, Post, Comment
 
 User = get_user_model()
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
@@ -33,6 +34,20 @@ class PostPagesTests(TestCase):
             title="Другая тестовая группа",
             slug="test-slug-another",
             description="Тестовое описание другой группы",
+        )
+
+        small_gif = (
+            b"\x47\x49\x46\x38\x39\x61\x02\x00"
+            b"\x01\x00\x80\x00\x00\x00\x00\x00"
+            b"\xFF\xFF\xFF\x21\xF9\x04\x00\x00"
+            b"\x00\x00\x00\x2C\x00\x00\x00\x00"
+            b"\x02\x00\x01\x00\x00\x02\x02\x0C"
+            b"\x0A\x00\x3B"
+        )
+        uploaded = SimpleUploadedFile(
+            name="small_gif",
+            content=small_gif,
+            content_type="image/gif",
         )
 
         cls.post = Post.objects.create(
@@ -212,6 +227,61 @@ class PostPagesTests(TestCase):
             response.context["page_obj"],
         )
 
+    def test_post_show_context_with_image(self):
+        response_post_detail = self.client.get(
+            reverse(
+                "posts:post_detail",
+                args=[PostPagesTests.post.id],
+            )
+        )
+        self.assertEqual(
+            PostPagesTests.post.image,
+            response_post_detail.context["post"].image,
+        )
+        responses = [
+            self.client.get(reverse("posts:index")),
+            self.client.get(
+                reverse(
+                    "posts:profile",
+                    args=[PostPagesTests.post.author],
+                )
+            ),
+            self.client.get(
+                reverse(
+                    "posts:group_list",
+                    args=[PostPagesTests.post.group.slug],
+                )
+            ),
+        ]
+        for response in responses:
+            with self.subTest(response=response):
+                self.assertEqual(
+                    PostPagesTests.post.image,
+                    response.context["page_obj"][0].image,
+                )
+
+    def test_anonymous_can_not_add_comment(self):
+        comments_count = Comment.objects.count()
+        self.client.post(
+            reverse("posts:add_comment", args=[PostPagesTests.post.id]),
+            data={"text": "Тестовый комментарий"},
+            follow=True,
+        )
+        self.assertEqual(Comment.objects.count(), comments_count)
+
+    def test_cache_work(self):
+        post = Post.objects.create(
+            text="Тестовый текст",
+            author=PostPagesTests.user,
+        )
+        response_first = self.client.get(reverse("posts:index"))
+        post.delete()
+        response_second = self.client.get(reverse("posts:index"))
+        self.assertEqual(response_first.content, response_second.content)
+
+        cache.clear()
+        response_second = self.client.get(reverse("posts:index"))
+        self.assertNotEqual(response_first.content, response_second.content)
 
 
 class PaginatorViewsTest(TestCase):
@@ -284,3 +354,6 @@ class PaginatorViewsTest(TestCase):
                     ),
                     (Post.objects.count() - 10),
                 )
+
+
+
