@@ -173,3 +173,6 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
     }
 }
+
+RECORDS_PER_PAGE = 10
+AMOUNT_OF_SYMBOLS = 50

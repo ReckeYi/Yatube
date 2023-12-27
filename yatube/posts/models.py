@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 
+from yatube import settings
+
 User = get_user_model()
 
 
@@ -90,4 +92,36 @@ class Comment(models.Model):
         verbose_name_plural = 'Комментарии'
 
     def __str__(self):
-        return self.text[: 50]
+        return self.text[: settings.AMOUNT_OF_SYMBOLS]
+
+
+class Follow(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='follower',
+        verbose_name='Подписчик'
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='following',
+        verbose_name='Автор'
+    )
+
+    class Meta:
+        verbose_name = 'Подписчик/подписка'
+        verbose_name_plural = 'Подписчики/подписки'
+
+    constraints = [
+        models.UniqueConstraint(
+            fields=["user", "author"],
+            name="unique_follow",
+        )
+    ]
+
+    def __str__(self):
+        return (
+            f"Подписчик: {self.user.username}. "
+            f"Подписка: {self.author.username}"
+        )

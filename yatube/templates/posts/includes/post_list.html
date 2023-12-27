@@ -1,0 +1,48 @@
+{% load thumbnail %}
+{% load static %}
+<div class="d-flex align-items-center mt-4">
+  <div class="pe-3">
+    <a href="{% url 'posts:profile' post.author.username %}">
+      {% if post.author.profile_picture %}
+        {% thumbnail post.author.profile_picture "60x60" crop="center" as im %}
+          <img class="rounded-circle" alt="profile_picture" src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}">
+        {% endthumbnail %}
+        {% else %}
+        {% thumbnail "users/picture.jpg" "60x60" crop="center" as im %}
+          <img class="rounded-circle" alt="profile_picture" src="{% static 'img/picture.jpg' %}" width="60" height="60">
+        {% endthumbnail %}
+      {% endif %}
+    </a>
+  </div>
+  <div class="me-auto pt-3">
+    <ul class="list-unstyled">
+      <li>
+        <a class="link_author h5" href="{% url 'posts:profile' post.author.username %}">
+          {% if post.author.get_full_name == '' %} {{ post.author.username }} {% else %} {{ post.author.get_full_name }} {% endif %}
+        </a>
+      </li>
+      <li>
+        {{ post.created|date:"d E Y" }}
+      </li>
+    </ul>
+  </div>
+  {% if post.group %}
+  <div>
+    <a class="btn btn-outline-dark button" href="{% url 'posts:group_list' post.group.slug %}">
+      Группа {{ post.group }}
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% thumbnail post.image "960x339" crop="center" upscale=True as im %}
+  <img class="card-img mt-3" src="{{ im.url }}">
+{% endthumbnail %}
+<p class="mt-3">{{ post.text }}</p>
+<div class="d-flex align-items-center justify-content-between mt-5 mb-4">
+  <div>
+    <a class="btn btn-outline-dark button" href="{% url 'posts:post_detail' post.pk %}">Подробная информация</a>
+  </div>
+</div>
+{% if not forloop.last %}
+  <hr>
+{% endif %}

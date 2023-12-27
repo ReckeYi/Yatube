@@ -9,7 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from ..models import Group, Post, Comment
+from ..models import Group, Post, Comment, Follow
 
 User = get_user_model()
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
@@ -356,4 +356,68 @@ class PaginatorViewsTest(TestCase):
                 )
 
 
+class FollowViewsTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
 
+        cls.user_follower = User.objects.create(username="TestFollower")
+        cls.user_following = User.objects.create(username="TestFollowing")
+
+        cls.outside_user = Client()
+        cls.outside_user.force_login(cls.user_following)
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user_follower)
+
+        cls.post = Post.objects.create(
+            text="Тестовый текст",
+            author=cls.user_following,
+        )
+
+    def test_authorized_user_can_follow_and_delete_follow_to_other_users(self):
+        FollowViewsTests.authorized_client.get(
+            reverse(
+                "posts:profile_follow",
+                args=[FollowViewsTests.user_following],
+            )
+        )
+        self.assertTrue(
+            Follow.objects.filter(
+                user=FollowViewsTests.user_follower,
+                author=FollowViewsTests.user_following,
+            ).exists()
+        )
+        FollowViewsTests.authorized_client.get(
+            reverse(
+                "posts:profile_unfollow",
+                args=[FollowViewsTests.user_following],
+            )
+        )
+        self.assertFalse(
+            Follow.objects.filter(
+                user=FollowViewsTests.user_follower,
+                author=FollowViewsTests.user_following,
+            ).exists()
+        )
+
+    def test_post_exist_for_follower_and_not_exist_for_not_follower(self):
+        FollowViewsTests.authorized_client.get(
+            reverse(
+                "posts:profile_follow",
+                args=[FollowViewsTests.user_following],
+            )
+        )
+        response = FollowViewsTests.authorized_client.get(
+            reverse("posts:follow_index"),
+        )
+        response_outside_user = FollowViewsTests.outside_user.get(
+            reverse("posts:follow_index")
+        )
+        self.assertIn(
+            FollowViewsTests.post,
+            response.context["page_obj"],
+        )
+        self.assertNotIn(
+            FollowViewsTests.post,
+            response_outside_user.context["page_obj"],
+        )
